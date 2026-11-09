@@ -3,7 +3,7 @@
   "name": "Mouse Battery",
   "version": "0.1.0",
   "author": "Copilot \u003c223556219+Copilot@users.noreply.github.com\u003e",
-  "description": "Mouse Battery is a Ryoku shell plugin.",
+  "description": "Mouse battery percentage and charging status from HyperFlux Next V2.",
   "license": "MIT",
   "official": false,
   "hosts": [
@@ -17,28 +17,36 @@
   "panel": {
     "width": 320
   },
-  "files": [],
+  "files": [
+    "service/Status.js",
+    "tests/status.test.cjs",
+    "assets/preview-widget.png"
+  ],
   "capabilities": {
     "densities": [
-      "glyph",
-      "compact"
+      "glyph"
     ]
   },
   "defaults": {
     "host": "topbarGlyph",
-    "label": "Mouse Battery"
+    "label": "Mouse Battery",
+    "bar": {
+      "section": "right"
+    }
   },
   "dependencies": {
-    "commands": []
+    "commands": ["hyperfluxctl", "timeout"]
   },
   "metadata": {
     "settings": [
       {
-        "key": "showCount",
-        "type": "toggle",
-        "label": "Show the tick count",
+        "key": "pollSeconds",
+        "type": "int",
+        "label": "Refresh interval (seconds)",
         "group": "Mouse Battery",
-        "default": true
+        "default": 15,
+        "min": 5,
+        "max": 300
       }
     ]
   }

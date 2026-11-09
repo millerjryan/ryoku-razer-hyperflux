@@ -1,12 +1,8 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import Ryoku.PluginKit.Singletons
 
-// content/Panel.qml is the bar panel: when this plugin is on the bar and the
-// manifest declares entryPoints.panel, the host renders this file under the
-// plugin's glyph in the shared panel surface (Escape or an outside click closes
-// it, one panel open at a time). The host sets pluginApi, density ("full"), s,
-// widthBudget (from manifest panel.width) and active; report implicitHeight and
-// the host sizes the card to it.
 Item {
     id: root
 
@@ -17,7 +13,7 @@ Item {
     property bool active: false
 
     readonly property var service: pluginApi ? pluginApi.mainInstance : null
-    readonly property int count: service ? service.count : 0
+    readonly property var battery: service ? service.battery : null
 
     implicitWidth: root.widthBudget
     implicitHeight: col.implicitHeight + 24 * root.s
@@ -30,38 +26,60 @@ Item {
         spacing: 10 * root.s
 
         Text {
-            text: "Demo plugin"
+            width: parent.width
+            text: root.battery ? root.battery.name : "Mouse Battery"
+            wrapMode: Text.Wrap
             color: Theme.bright
             font.family: Theme.display
             font.pixelSize: 16 * root.s
         }
 
         Text {
-            text: "Ticks: " + root.count
-            color: Theme.dim
+            text: root.battery ? root.battery.value : "--"
+            color: root.battery?.charging ? Theme.accent : Theme.bright
+            font.family: Theme.font
+            font.pixelSize: 28 * root.s
+        }
+
+        Text {
+            width: parent.width
+            text: root.battery ? root.battery.message : "Waiting for HyperFlux"
+            wrapMode: Text.Wrap
+            color: root.battery?.error ? Theme.vermDeep : Theme.dim
             font.family: Theme.font
             font.pixelSize: 13 * root.s
         }
 
+        Text {
+            width: parent.width
+            visible: text !== ""
+            text: root.battery ? root.battery.detail : ""
+            color: Theme.dim
+            font.family: Theme.font
+            font.pixelSize: 12 * root.s
+        }
+
         Rectangle {
-            width: resetLabel.implicitWidth + 24 * root.s
-            height: resetLabel.implicitHeight + 12 * root.s
+            width: refreshLabel.implicitWidth + 24 * root.s
+            height: refreshLabel.implicitHeight + 12 * root.s
             radius: Theme.radius
-            color: resetArea.pressed ? Theme.vermDeep : Theme.accent
+            color: refreshArea.pressed ? Theme.vermDeep : Theme.accent
+            opacity: refreshArea.enabled ? 1 : 0.5
 
             Text {
-                id: resetLabel
+                id: refreshLabel
                 anchors.centerIn: parent
-                text: "RESET"
+                text: root.service?.busy ? "REFRESHING..." : "REFRESH"
                 color: Theme.cardBot
                 font.family: Theme.font
                 font.pixelSize: 12 * root.s
             }
 
             MouseArea {
-                id: resetArea
+                id: refreshArea
                 anchors.fill: parent
-                onClicked: if (root.service) root.service.reset()
+                enabled: root.service !== null && !root.service.busy
+                onClicked: root.service.refresh()
             }
         }
     }

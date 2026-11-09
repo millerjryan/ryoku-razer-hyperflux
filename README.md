@@ -1,56 +1,56 @@
 # Mouse Battery
 
-A Ryoku shell plugin (`hyperflux-battery`) scaffolded for the `topbarGlyph` host. The working
-demo is a counter that ticks once a second; edit it into your own plugin.
+A Ryoku QS Bar plugin for mice connected through the Razer HyperFlux V2
+receiver, using HyperFlux Next V2.
 
-## What it does
+The bar shows a mouse icon and battery percentage, plus a lightning bolt while
+charging. Low battery (20% or less, not charging) uses the warning colour.
+Click to see the mouse name, charging status, reading age, and a refresh button.
 
-- **Service** (`service/Main.qml`): the logic, no UI. Holds the live state the
-  view reads through `pluginApi.mainInstance`.
-- **Widget** (`content/Widget.qml`): the one view every host mounts.
-- **Panel** (`content/Panel.qml`): present only in a `--bar` scaffold; the bar
-  opens it beneath the glyph.
+Offline mice show `offline`, missing readings show `--`, stale readings have a
+`~` prefix, and command errors show `!` with details in the panel. It never
+converts an unknown battery level to zero or preserves a charging indicator
+after a failed poll. If more than one mouse is present, the first online mouse
+is used, otherwise the first mouse.
 
-Ryoku ships four hosts: `topbarGlyph`, `desktopWidget`, `framePopout`, and
-`sidebarCard`. A sidebar card still uses `content/Widget.qml` plus
-`service/Main.qml`; it does not have a separate sidebar entry point. Its root
-`Item` exposes `s`, `open`, `reveal`, `tabActive`, `pluginApi`, and
-`requestClose()`. Ryoku owns its `width`, and the item reports only its
-`implicitHeight`.
+## What it runs, reads, and writes
 
-## What it reads and writes
+Runs `hyperfluxctl status --json` through GNU `timeout` every 15 seconds,
+with a five-second timeout and a one-second kill grace period. Reads only its
+JSON status output and declared plugin settings. It does not configure the
+receiver or force a fresh hardware query: the HyperFlux bridge owns hardware
+polling, so its reported battery percentage can update less often.
 
-The demo reads nothing off the machine and writes nothing. When you add real
-behaviour, keep to the rules in `AGENTS.md`: read settings through
-`pluginApi.pluginSettings` behind a default, write them only through
-`pluginApi.saveSetting(key, value)`, and write files only under
-`pluginApi.stateDir`. Every external command belongs in `bin/` or in
-`dependencies.commands`; every host you contact belongs in
-`capabilities.network`; a privileged action runs only through `pkexec` listed in
-`capabilities.privileged`.
+No network access, privileged actions, or file writes. Ryoku owns installation,
+placement, and settings persistence. Requires `hyperfluxctl` from HyperFlux
+Next V2 and `timeout` from coreutils, with the HyperFlux bridge running.
 
 ## Settings
 
-| key       | type   | default | description         |
-| --------- | ------ | ------- | ------------------- |
-| showCount | toggle | true    | Show the tick count |
+QS Bar Settings > Community > Mouse Battery:
 
-## Preview
+| Key | Type | Default | Description |
+| --- | --- | --- | --- |
+| pollSeconds | int | 15 | Status refresh interval, 5-300 seconds |
 
-Capture a real screenshot of the widget and save it as
-`assets/preview-widget.png`, then list it under `files` in `manifest.json`. The
-store shows it in the catalogue.
+## Install and maintain
 
-## Build, check, install
-
-```
+```sh
 ryoku plugin validate .
-ryoku plugin add . --yes
+ryoku plugin add . --bar --yes
+ryoku-shell bar move hyperflux-battery --section right --after battery
 ```
 
-Enable and place it under **Ryoku Settings > Add-ons**. A bar plugin can instead
-use `ryoku plugin add . --bar --yes` to enable it on the current bar immediately.
+Edit this authoring directory, never the receipt-owned installed copy. To update,
+note any changed settings, run `ryoku plugin remove hyperflux-battery`, then
+repeat the install and placement commands above (removal resets settings).
+Move or remove the plugin in QS Bar Settings under Layout or Community.
 
-## Author
+Development checks: `node --test tests/status.test.cjs` and
+`/usr/lib/qt6/bin/qmllint service/Main.qml content/Widget.qml content/Panel.qml`.
+The preview in `assets/preview-widget.png` is captured from the running bar.
 
-Copilot <223556219+Copilot@users.noreply.github.com>: this plugin is community-made (`official` is false).
+## Author and license
+
+Copilot <223556219+Copilot@users.noreply.github.com>. MIT licensed,
+community-made (`official` is false); not affiliated with Razer or Ryoku.

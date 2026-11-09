@@ -1,12 +1,8 @@
 pragma ComponentBehavior: Bound
+
 import QtQuick
 import Ryoku.PluginKit.Singletons
 
-// content/Widget.qml is the one view every host mounts (on the bar, this is the
-// glyph). It reads live state from the service through pluginApi.mainInstance.
-// The sidebar host sets open, reveal, tabActive, width, s and pluginApi; other
-// hosts set active, density and widthBudget as well. Read host values, never
-// assign them.
 Item {
     id: root
 
@@ -15,54 +11,51 @@ Item {
     property bool active: false
     property string density: "glyph"
     property real s: 1
-    property real widthBudget: 0
-    property bool open: false
-    property real reveal: 0
-    property bool tabActive: false
-    signal requestClose()
+    property real widthBudget: 220
 
     readonly property var service: pluginApi ? pluginApi.mainInstance : null
-    readonly property int count: service ? service.count : 0
+    readonly property var battery: service ? service.battery : null
+    readonly property color ink: !battery || !battery.online || battery.stale
+        ? Theme.dim : battery.level >= 0 && battery.level <= 20 && !battery.charging
+        ? Theme.vermDeep : Theme.bright
 
-    implicitWidth: row.implicitWidth
+    implicitWidth: Math.min(row.implicitWidth, root.widthBudget > 0 ? root.widthBudget : 220 * root.s)
     implicitHeight: Math.max(row.implicitHeight, 18 * root.s)
+    clip: true
 
     Row {
         id: row
         anchors.verticalCenter: parent.verticalCenter
-        spacing: 6 * root.s
+        spacing: 5 * root.s
 
-        // The plugin's mark. Tint it with the themed accent so it follows the
-        // active palette (Theme resolves colour from the system scheme).
         Text {
             anchors.verticalCenter: parent.verticalCenter
-            text: "\u25C6"
-            color: (root.active || root.open) ? Theme.accent : Theme.dim
-            font.family: Theme.mono
+            text: "\ue323"
+            color: root.battery?.error ? Theme.vermDeep : root.ink
+            font.family: "Material Symbols Rounded"
+            font.pixelSize: 17 * root.s
+        }
+
+        Text {
+            anchors.verticalCenter: parent.verticalCenter
+            text: root.battery ? root.battery.value : "--"
+            color: root.battery?.error ? Theme.vermDeep : root.ink
+            font.family: Theme.font
             font.pixelSize: 13 * root.s
         }
 
-        // The label beside the mark, elided to the width the host allows.
         Text {
             anchors.verticalCenter: parent.verticalCenter
-            text: root.count
-            color: Theme.bright
-            font.family: Theme.font
-            font.pixelSize: 13 * root.s
-            elide: Text.ElideRight
-            width: root.widthBudget > 0 ? Math.min(implicitWidth, root.widthBudget) : implicitWidth
+            visible: root.battery ? root.battery.charging : false
+            text: "\ue3e7"
+            color: Theme.accent
+            font.family: "Material Symbols Rounded"
+            font.pixelSize: 16 * root.s
         }
     }
 
     MouseArea {
         anchors.fill: parent
-        onClicked: {
-            if (!root.pluginApi)
-                return;
-            if (root.open)
-                root.requestClose();
-            else if (root.pluginApi.togglePanel)
-                root.pluginApi.togglePanel();
-        }
+        onClicked: if (root.pluginApi) root.pluginApi.togglePanel()
     }
 }
